@@ -1,0 +1,12 @@
+html,
+body {
+  height: 100%;
+}
+
+#editor {
+  height: calc(100% - 3em);
+}
+
+.hidden {
+  display: none;
+}
