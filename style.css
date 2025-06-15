@@ -4,7 +4,7 @@ body {
 }
 
 #editor {
-  height: calc(100% - 3em);
+  height: calc(100% - 10em);
 }
 
 .hidden {

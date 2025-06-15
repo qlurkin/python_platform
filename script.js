@@ -2,14 +2,41 @@ import * as monaco from "https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/+esm"
 import { asyncRun } from "./workerApi.mjs";
 
 const myEditor = monaco.editor.create(document.getElementById("editor"), {
-  value: `with open("/home/caca", "w") as file:
-    file.write("merde")`,
+  value: `print("Hello World!")`,
   language: "python",
   automaticLayout: true,
 });
 
+const scripts = {};
+
+async function loadScripts(url) {
+  if (!scripts[url]) {
+    const response = await fetch(url);
+    scripts[url] = await response.text();
+  }
+  return scripts[url];
+}
+
+async function preScript(args) {
+  const script = await loadScripts("./pre_script.py");
+  const { result, error } = await asyncRun(script, { args });
+  return { result, error };
+}
+
+async function readFile(filename) {
+  const script = await loadScripts("./read_file.py");
+  const { result, error } = await asyncRun(script, { filename });
+  return { result, error };
+}
+
+async function saveFile(filename, content) {
+  const script = await loadScripts("./save_file.py");
+  const { result, error } = await asyncRun(script, { filename, content });
+  return { result, error };
+}
+
 const commands = {
-  python: async () => {
+  python: async (args) => {
     const { result, error } = await asyncRun(myEditor.getValue(), {});
     return { result, error };
   },
@@ -17,6 +44,20 @@ const commands = {
     const result = myEditor.getValue();
     const error = undefined;
     return { result, error };
+  },
+  cd: async (args) => {
+    const dest = args[0];
+    const src = await loadScripts("./cd.py");
+    const { result, error } = await asyncRun(src, { dest });
+    document.getElementById("cwd").innerHTML = result;
+    return { error };
+  },
+  code: async (args) => {
+    const filename = args[0];
+    const { result, error } = await readFile(filename);
+    myEditor.setValue(result);
+    document.getElementById("filename").innerHTML = filename;
+    return { error };
   },
 };
 
@@ -69,11 +110,12 @@ document
     }
     history.push(cmd);
     history_index = 0;
-    if (commands[cmd]) {
-      const { result, error, fs } = await commands[cmd]();
+
+    const parts = cmd.split(" ");
+    if (commands[parts[0]]) {
+      const { result, error } = await commands[parts[0]](parts.slice(1));
       if (result) console.log(result);
       if (error) console.log(error);
-      if (fs) console.log();
     } else {
       console.log(`Unknown command "${cmd}"`);
     }

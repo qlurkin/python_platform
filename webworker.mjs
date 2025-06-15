@@ -1,11 +1,15 @@
 import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.mjs";
 
-let pyodideReadyPromise = loadPyodide().then((pyodide) => {
-  let mountDir = "/home/pyodide";
-  pyodide.FS.mkdirTree(mountDir);
-  pyodide.FS.mount(pyodide.FS.filesystems.IDBFS, {}, mountDir);
-  return pyodide;
-});
+function init_pyodide() {
+  return loadPyodide().then((pyodide) => {
+    let mountDir = "/home/pyodide";
+    pyodide.FS.mkdirTree(mountDir);
+    pyodide.FS.mount(pyodide.FS.filesystems.IDBFS, {}, mountDir);
+    return pyodide;
+  });
+}
+
+let pyodideReadyPromise = init_pyodide();
 
 self.onmessage = async (event) => {
   // make sure loading is done
